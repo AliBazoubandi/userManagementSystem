@@ -1,0 +1,95 @@
+services:
+  db:
+    image: postgres:latest
+    container_name: postgres_container
+    environment:
+      POSTGRES_USER: alibazoubandi
+      POSTGRES_PASSWORD: 575980899598
+      POSTGRES_DB: myDataBase
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - my-network
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "alibazoubandi", "-d", "myDataBase"]
+      interval: 10s
+      retries: 5
+      start_period: 10s
+      timeout: 5s
+
+  app:
+    build: .
+    container_name: backend_container
+    environment:
+      DATABASE_URL: postgres://alibazoubandi:575980899598@db:5432/myDataBase?sslmode=disable
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - my-network
+
+  redis:
+    image: redis:latest
+    container_name: redis_container
+    networks:
+      - my-network
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+  
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - my-network
+    depends_on:
+      - app
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - my-network
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana_data:/var/lib/grafana
+
+  k6:
+    build: 
+      context: .
+      dockerfile: Dockerfile.k6
+    container_name: k6
+    depends_on:
+      - app
+    networks:
+      - my-network
+
+volumes:
+  postgres_data:
+    driver: local
+  grafana_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+
+networks:
+  my-network:
+    driver: bridge

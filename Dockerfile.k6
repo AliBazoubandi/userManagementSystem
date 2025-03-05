@@ -1,0 +1,15 @@
+FROM grafana/k6:latest
+
+# Set working directory inside the container
+WORKDIR /k6-tests
+
+# Copy the test scripts
+COPY tests /k6-tests/tests
+COPY tests/run_k6_tests.sh /k6-tests/run_k6_tests.sh
+
+USER root
+# Give execution permission inside the container
+RUN chmod +x /k6-tests/run_k6_tests.sh
+
+# Set the run_k6_tests script
+ENTRYPOINT ["/bin/sh", "/k6-tests/run_k6_tests.sh"]
