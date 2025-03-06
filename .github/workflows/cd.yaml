@@ -10,8 +10,8 @@ jobs:
   build-push-image:
     runs-on: self-hosted
 
-    outputs:
-      date: ${{ steps.date.outputs.date }}
+#    outputs:
+#      date: ${{ steps.date.outputs.date }}
 
     steps:
       - uses: actions/checkout@v4
