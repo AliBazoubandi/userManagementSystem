@@ -15,8 +15,10 @@ jobs:
 
       - name: Grant Docker Permissions
         run: |
+          Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope Process -Force
           net localgroup docker-users $env:USERNAME /add
         shell: powershell
+
 
 
       - name: Set up Docker Buildx
