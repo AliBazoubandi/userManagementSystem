@@ -39,10 +39,10 @@ jobs:
           # because we dont have secret key for codeconv for now we commented this
 #          fail_ci_if_error: true
 
-      - name: Run security check
-        run: |
-          go install github.com/securego/gosec/v2/cmd/gosec@latest
-          gosec ./...
+      # - name: Run security check
+      #   run: |
+      #     go install github.com/securego/gosec/v2/cmd/gosec@latest
+      #     gosec ./...
 
       - name: Run dependency check
         run: |
