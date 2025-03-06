@@ -75,7 +75,7 @@ jobs:
           echo "Waiting for services to start..."
           sleep 60  # Increase waiting time for better stability
           docker compose ps  # Check container status
-          docker logs $(docker ps -q)  # Print logs for debugging
+          docker logs backend_container  # Print logs for debugging
 
       - name: Health check
         run: |
