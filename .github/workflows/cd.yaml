@@ -7,28 +7,59 @@ on:
       - completed
 
 jobs:
+  build-push-image:
+    runs-on: self-hosted
+
+    outputs:
+      date: ${{ steps.date.outputs.date }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get current date # Get the date of the build
+        id: date
+        run: echo "::set-output name=date::$(date +%s)"
+      - name: Build the Docker image
+        run: docker build . --file Dockerfile  --tag ghcr.io/alibazoubandi/backend_container:${{ steps.date.outputs.date }}
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push the Docker image to the GitHub registry
+        run: docker push ghcr.io/alibazoubandi/backend_container:${{ steps.date.outputs.date }}
+
   deploy:
     runs-on: self-hosted
+    needs: build-push-image
+
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Grant Docker Permissions
+      - name: Add local machine to known_hosts
         run: |
-          Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope Process -Force
-          net localgroup docker-users $env:USERNAME /add
-        shell: powershell
+          ssh-keyscan localhost >> ~/.ssh/known_hosts
 
+#      - name: Add remote server to known_hosts
+#        run: |
+#          ssh-keyscan user@remote_server >> ~/.ssh/known_hosts    # Replace user@remote_server
 
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and Run Docker Containers
+#      - name: Deploy to server
+#        run: |
+#          ssh user@remote_server << 'EOF'                         # Replace user@remote_server
+#            cd <REPLACE_ME_WITH_DOCKER_COMPOSE_FOLDER>            # Replace with your Docker Compose folder
+#            sed -i 's/^DOCKER_TAG=.*/DOCKER_TAG=${{ needs.build-push-image.outputs.date }}/' .env
+#            docker compose up -d
+#          EOF
+      - name: Deploy to local machine
         run: |
-          docker compose up -d --build
-
-      - name: Health Check
-        run: |
-          docker compose ps  # Check container status
-          docker logs backend_container  # Print logs for debugging
+          ssh localhost << 'EOF'
+            # Change to the directory where your Docker Compose file is
+            cd D:/userManagementSystem
+          
+            # Deploy using Docker Compose (without modifying .env)
+            docker compose up -d --build
+          EOF
