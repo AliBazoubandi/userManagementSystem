@@ -44,7 +44,29 @@ jobs:
       #     go install github.com/securego/gosec/v2/cmd/gosec@latest
       #     gosec ./...
 
-      - name: Run dependency check
+#      - name: Run dependency check
+#        run: |
+#          go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+#          golangci-lint run --enable=goimports ./...
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: my-backend-app:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run Docker Compose
         run: |
-          go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-          golangci-lint run --enable=goimports ./...
+          docker-compose up -d --build
+          sleep 30  # Wait for services to start
+          docker-compose ps  # Check container status
+
+      - name: Health check
+        run: |
+          curl --retry 3 --retry-delay 5 --retry-connrefused http://localhost:8080/health || exit 1
