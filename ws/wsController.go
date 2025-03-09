@@ -34,14 +34,30 @@ func (ws *WsController) CreateRoom(c *gin.Context) {
 	}
 
 	type RequestBody struct {
-		Name string `json:"name"`
+		Name string `json:"name" binding:"required"`
 	}
 
-	var req RequestBody
-	if err := c.ShouldBindJSON(&req); err != nil {
+	// Bind the request body to a map first
+	var raw map[string]interface{}
+	if err := c.ShouldBindJSON(&raw); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	// Ensure that the only field present is "name"
+	if len(raw) > 1 || (len(raw) == 1 && raw["name"] == nil) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Request body contains unexpected fields"})
+		return
+	}
+
+	// Now bind the valid data to your struct
+	var req RequestBody
+	name, ok := raw["name"].(string)
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Request body contains an invalid field"})
+		return
+	}
+	req.Name = name
 
 	room, err := ws.Queries.CreateRoom(c.Request.Context(), req.Name)
 	if err != nil {
