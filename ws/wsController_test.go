@@ -99,7 +99,7 @@ func (m *MockRows) RawValues() [][]byte {
 
 // CommandTag returns the command tag for the query
 func (m *MockRows) CommandTag() pgconn.CommandTag {
-	return pgconn.NewCommandTag("SELECT 1") // Use pgconn.NewCommandTag to create a CommandTag
+	return pgconn.NewCommandTag("SELECT 1")
 }
 
 // Values returns the decoded values of the current row
@@ -238,109 +238,6 @@ func TestCreateRoom(t *testing.T) {
 	}
 }
 
-//func TestCreateRoom(t *testing.T) {
-//	gin.SetMode(gin.TestMode)
-//
-//	tests := []struct {
-//		name         string
-//		input        map[string]interface{}
-//		username     string
-//		mockBehavior func(mockDB *mocks.DBTX)
-//		expectedCode int
-//		expectedErr  bool
-//	}{
-//		{
-//			name: "successful room creation",
-//			input: map[string]interface{}{
-//				"name": "Test Room",
-//			},
-//			username: "tester",
-//			mockBehavior: func(mockDB *mocks.DBTX) {
-//				// MockRows for QueryRow (single row)
-//				mockRows := NewMockRows([][]interface{}{
-//					{int32(1), "Test Room"}, // Simulate a single row
-//				})
-//
-//				// Mock QueryRow
-//				mockDB.On("QueryRow",
-//					mock.Anything, // context.Context
-//					mock.Anything, // query string
-//					mock.Anything, // arguments (if any)
-//				).Return(mockRows)
-//
-//				// Mock AddUserToRoom (also uses QueryRow)
-//				mockDB.On("QueryRow",
-//					mock.Anything, // context.Context
-//					mock.Anything, // query string
-//					mock.Anything, // arguments (if any)
-//					mock.Anything, // arguments (if any)
-//				).Return(mockRows)
-//			},
-//			expectedCode: http.StatusCreated,
-//			expectedErr:  false,
-//		},
-//		{
-//			name: "unauthorized request",
-//			input: map[string]interface{}{
-//				"name": "Test Room",
-//			},
-//			username:     "",
-//			mockBehavior: func(mockDB *mocks.DBTX) {},
-//			expectedCode: http.StatusUnauthorized,
-//			expectedErr:  true,
-//		},
-//		{
-//			name: "invalid request body",
-//			input: map[string]interface{}{
-//				"name":    "Test Room",
-//				"invalid": "data",
-//			},
-//			username:     "tester",
-//			mockBehavior: func(mockDB *mocks.DBTX) {},
-//			expectedCode: http.StatusBadRequest,
-//			expectedErr:  true,
-//		},
-//	}
-//
-//	for _, tt := range tests {
-//		t.Run(tt.name, func(t *testing.T) {
-//			mockDB := &mocks.DBTX{}
-//			queries := db.New(mockDB)
-//			logger, _ := zap.NewDevelopment()
-//			hub := NewHub()
-//			wsc := NewWsController(queries, hub, logger)
-//
-//			tt.mockBehavior(mockDB)
-//
-//			w := httptest.NewRecorder()
-//			c, _ := gin.CreateTestContext(w)
-//
-//			if tt.username != "" {
-//				c.Set("username", tt.username)
-//			}
-//
-//			jsonValue, _ := json.Marshal(tt.input)
-//			c.Request, _ = http.NewRequest("POST", "ws/create-room", bytes.NewBuffer(jsonValue))
-//			c.Request.Header.Set("Content-Type", "application/json")
-//
-//			wsc.CreateRoom(c)
-//
-//			assert.Equal(t, tt.expectedCode, w.Code)
-//
-//			var response map[string]interface{}
-//			err := json.Unmarshal(w.Body.Bytes(), &response)
-//			assert.NoError(t, err)
-//
-//			if !tt.expectedErr {
-//				assert.Contains(t, response, "id")
-//				assert.Contains(t, response, "name")
-//			} else {
-//				assert.Contains(t, response, "error")
-//			}
-//		})
-//	}
-//}
-
 func TestGetRooms(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
@@ -408,107 +305,13 @@ func TestGetRooms(t *testing.T) {
 				var response []map[string]interface{}
 				err := json.Unmarshal(w.Body.Bytes(), &response)
 				assert.NoError(t, err)
-				assert.Equal(t, 1, len(response))                 // Check the number of rooms
-				assert.Equal(t, float64(1), response[0]["id"])    // Check the ID of the first room
-				assert.Equal(t, "Test Room", response[0]["name"]) // Check the name of the first room
+				assert.Equal(t, 1, len(response))
+				assert.Equal(t, float64(1), response[0]["id"])
+				assert.Equal(t, "Test Room", response[0]["name"])
 			}
 		})
 	}
 }
-
-//func TestGetClients(t *testing.T) {
-//	gin.SetMode(gin.TestMode)
-//
-//	tests := []struct {
-//		name         string
-//		roomID       string
-//		mockBehavior func(mockDB *mocks.DBTX)
-//		expectedCode int
-//		expectedErr  bool
-//	}{
-//		{
-//			name:   "successful get clients",
-//			roomID: "1",
-//			mockBehavior: func(mockDB *mocks.DBTX) {
-//				mockRow := new(MockRow)
-//				mockRow.On("Scan",
-//					mock.Anything,
-//					mock.Anything,
-//				).Return(nil)
-//
-//				mockDB.On("QueryRow",
-//					mock.Anything,
-//					mock.Anything,
-//					mock.Anything,
-//				).Return(mockRow)
-//
-//				mockRows := pgxmock.NewRows([]string{"id", "name"}).AddRow(1, "Test Room")
-//				mockDB.On("Query",
-//					mock.Anything,
-//					mock.Anything,
-//					mock.Anything,
-//				).Return(mockRows, nil)
-//			},
-//			expectedCode: http.StatusOK,
-//			expectedErr:  false,
-//		},
-//		{
-//			name:         "invalid room id",
-//			roomID:       "invalid",
-//			mockBehavior: func(mockDB *mocks.DBTX) {},
-//			expectedCode: http.StatusBadRequest,
-//			expectedErr:  true,
-//		},
-//		{
-//			name:   "room not found",
-//			roomID: "999",
-//			mockBehavior: func(mockDB *mocks.DBTX) {
-//				mockRow := new(MockRow)
-//				mockRow.On("Scan",
-//					mock.Anything,
-//					mock.Anything,
-//				).Return(pgx.ErrNoRows)
-//
-//				mockDB.On("QueryRow",
-//					mock.Anything,
-//					mock.Anything,
-//					mock.Anything,
-//				).Return(mockRow)
-//			},
-//			expectedCode: http.StatusBadRequest,
-//			expectedErr:  true,
-//		},
-//	}
-//
-//	for _, tt := range tests {
-//		t.Run(tt.name, func(t *testing.T) {
-//			mockDB := &mocks.DBTX{}
-//			queries := db.New(mockDB)
-//			logger, _ := zap.NewDevelopment()
-//			hub := NewHub()
-//			wsc := NewWsController(queries, hub, logger)
-//
-//			tt.mockBehavior(mockDB)
-//
-//			w := httptest.NewRecorder()
-//			c, _ := gin.CreateTestContext(w)
-//			c.Request, _ = http.NewRequest("GET", "ws/getClients/"+tt.roomID, nil)
-//			c.Params = []gin.Param{{Key: "roomId", Value: tt.roomID}}
-//
-//			wsc.GetClients(c)
-//
-//			assert.Equal(t, tt.expectedCode, w.Code)
-//
-//			var response map[string]interface{}
-//			err := json.Unmarshal(w.Body.Bytes(), &response)
-//			assert.NoError(t, err)
-//
-//			if tt.expectedErr {
-//				assert.Contains(t, response, "error")
-//			}
-//		})
-//	}
-//}
 
 func TestGetClients(t *testing.T) {
 	gin.SetMode(gin.TestMode)
@@ -524,12 +327,10 @@ func TestGetClients(t *testing.T) {
 			name:   "successful get clients",
 			roomID: "1",
 			mockBehavior: func(mockDB *mocks.DBTX) {
-				// MockRows for QueryRow (single row)
 				mockRowsForQueryRow := NewMockRows([][]interface{}{
-					{int32(1), "Test Room"}, // Simulate a single row
+					{int32(1), "Test Room"},
 				})
 
-				// Mock QueryRow
 				mockDB.On("QueryRow",
 					mock.Anything, // context.Context
 					mock.Anything, // query string
@@ -538,13 +339,11 @@ func TestGetClients(t *testing.T) {
 					mockRowsForQueryRow.Next()
 				}).Return(mockRowsForQueryRow)
 
-				// MockRows for Query (multiple rows)
 				mockRowsForQuery := NewMockRows([][]interface{}{
-					{int32(1), "Client 1"}, // Row 1
-					{int32(2), "Client 2"}, // Row 2
+					{int32(1), "Client 1"},
+					{int32(2), "Client 2"},
 				})
 
-				// Mock Query
 				mockDB.On("Query",
 					mock.Anything, // context.Context
 					mock.Anything, // query string
@@ -601,28 +400,20 @@ func TestGetClients(t *testing.T) {
 
 			assert.Equal(t, tt.expectedCode, w.Code)
 
-			//var response map[string]interface{}
-			//err := json.Unmarshal(w.Body.Bytes(), &response)
-			//assert.NoError(t, err)
-			//
-			//if tt.expectedErr {
-			//	assert.Contains(t, response, "error")
-			//}
-
 			if tt.expectedErr {
-				// Handle error case
 				var response map[string]interface{}
 				err := json.Unmarshal(w.Body.Bytes(), &response)
 				assert.NoError(t, err)
 				assert.Contains(t, response, "error")
 			} else {
-				// Handle success case
 				var response []map[string]interface{}
 				err := json.Unmarshal(w.Body.Bytes(), &response)
 				assert.NoError(t, err)
-				assert.Equal(t, 2, len(response))                    // Check the number of rooms
-				assert.Equal(t, float64(1), response[0]["id"])       // Check the ID of the first room
-				assert.Equal(t, "Client 1", response[0]["username"]) // Check the name of the first room
+				assert.Equal(t, 2, len(response))
+				assert.Equal(t, float64(1), response[0]["id"])
+				assert.Equal(t, "Client 1", response[0]["username"])
+				assert.Equal(t, float64(2), response[1]["id"])
+				assert.Equal(t, "Client 2", response[1]["username"])
 			}
 		})
 	}
